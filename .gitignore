@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ruff_cache/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Project specific
+.env
+dist/
