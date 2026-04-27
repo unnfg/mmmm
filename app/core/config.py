@@ -17,7 +17,7 @@ def parse_cors(raw_value: Any) -> list[str] | str:
         return [i.strip() for i in raw_value.split(",") if i.strip()]
     elif isinstance(raw_value, list | str):
         return raw_value
-    raise ValueError("Invalid CORS origins format: {0}", raw_value)
+    raise ValueError(f"Invalid CORS origins format: {raw_value}")
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
