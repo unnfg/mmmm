@@ -1,8 +1,7 @@
-import secrets
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from pydantic import AnyUrl, BeforeValidator, HttpUrl, computed_field, model_validator
+from pydantic import AnyUrl, BeforeValidator, HttpUrl, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
 
@@ -38,7 +37,7 @@ class Settings(BaseSettings):
     project_name: str
     debug: bool = True
     api_prefix: str = "/api"
-    secret_key: str = secrets.token_urlsafe(32)  # fallback for dev env
+    secret_key: str
 
     # CORS
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl], BeforeValidator(parse_cors)] = []
@@ -78,14 +77,6 @@ class Settings(BaseSettings):
             port=self.postgres_port,
             database=self.postgres_db,
         )
-
-    @model_validator(mode="after")
-    def validate_prod_secrets(self) -> Settings:
-        """Fail-fast on production environment if missing secret key."""
-        if self.environment == "prod":
-            if self.secret_key == secrets.token_urlsafe(32):
-                raise ValueError("SECRET_KEY can't empty in production environment")
-        return self
 
     def require_superuser_credentials(self) -> tuple[str, str]:
         if not self.first_superuser or not self.first_superuser_password:
