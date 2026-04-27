@@ -24,7 +24,7 @@ class UserCreate(UserBase):
 
 # Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
-    phone_number: str | None = Field(default=None, max_length=255)  # type: ignore[assignment]
+    phone_number: str | None = Field(default=None, min_length=10, max_length=10)  # type: ignore[assignment]
     password: str | None = Field(default=None, min_length=8, max_length=128)
 
 

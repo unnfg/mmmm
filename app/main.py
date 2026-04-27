@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.main import api_router
 from app.core.config import settings
 
-if settings.sentry_dns and settings.environment == "prod":
+if settings.sentry_dsn and settings.environment == "prod":
     sentry_sdk.init(
-        dsn=str(settings.sentry_dns),
+        dsn=str(settings.sentry_dsn),
         # Add data like request headers and IP for users,
         # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
         send_default_pii=False,

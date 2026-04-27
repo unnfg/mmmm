@@ -1,10 +1,16 @@
+import logging
+
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, create_engine, select
 
 from app import crud
 from app.core.config import settings
 from app.models import User, UserCreate
 
-engine = create_engine(str(settings.sqlalchemy_database_uri), echo=True)
+logger = logging.getLogger(__name__)
+
+# Log SQL queries only during development; disable in production to avoid data exposure.
+engine = create_engine(settings.sqlalchemy_database_uri, echo=settings.debug)
 
 
 # make sure all SQLModel models are imported (app.models) before initializing DB
@@ -25,9 +31,20 @@ def init_db(session: Session) -> None:
         select(User).where(User.phone_number == settings.first_superuser)
     ).first()
     if not user:
-        user_in = UserCreate(
-            phone_number=settings.first_superuser,
-            password=settings.first_superuser_password,
-            is_superuser=True,
-        )
-        user = crud.create_user(session=session, user_create=user_in)
+        phone_number, password = settings.require_superuser_credentials()
+        try:
+            user_in = UserCreate(
+                phone_number=phone_number,
+                password=password,
+                is_superuser=True,
+            )
+            crud.create_user(session=session, user_create=user_in)
+            logger.info("Superuser created: %s", settings.first_superuser)
+
+        except IntegrityError:
+            session.rollback()
+            # Guard superuser bootstrap against startup race (TOCTOU) by concurrent startup
+            # Another worker has already been inserted, ignore this.
+            logger.info("Superuser already exists (race condition handled)")
+    else:
+        logger.info("Superuser already exists, skipping init")

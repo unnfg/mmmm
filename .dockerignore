@@ -1,8 +1,39 @@
 # Python
-__pycache__
-app.egg-info
+__pycache__/
+*.py[cod]
 *.pyc
-.mypy_cache
+app.egg-info/
+*.egg-info/
+.mypy_cache/
+htmlcov/
+dist/
+build/
+*.egg
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# VCS
+.git/
+.gitignore
+
+# Build artifacts
 .coverage
-htmlcov
-.venv
+
+# Virtual env
+venv/
+.venv/
+.env
+.env.*
+
+# Secrets and keys
+*.key
+*.pem
+*.crt
+secrets/
+
+# Logs and temp
+*.log
+*.tmp

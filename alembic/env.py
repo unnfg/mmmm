@@ -14,7 +14,10 @@ from app.core.config import settings
 config = context.config
 
 # Overite sqlalchemy.url in alembic.ini file by URI from config.py
-config.set_main_option("sqlalchemy.url", str(settings.sqlalchemy_database_uri))
+config.set_main_option(
+    "sqlalchemy.url",
+    settings.sqlalchemy_database_uri.render_as_string(hide_password=False),
+)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
