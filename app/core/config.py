@@ -1,3 +1,4 @@
+import secrets
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -25,25 +26,57 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=BASE_DIR / ".env", env_ignore_empty=True, extra="ignore"
+        env_file=BASE_DIR / ".env",
+        env_ignore_empty=True,
+        case_sensitive=False,
+        extra="ignore",
     )
-    API_PREFIX: str = "/api"
-    PROJECT_NAME: str
-    ENVIRONMENT: Literal["dev", "prod"] = "prod"
 
-    # Sentry
-    SENTRY_DSN: HttpUrl | None = None
+    # App
+    environment: Literal["dev", "prod"] = "dev"
+    project_name: str
+    debug: bool = True
+    api_prefix: str = "/api"
+    secret_key: str = secrets.token_urlsafe(32)
 
     # CORS
-    FRONTEND_HOST: str = "http://localhost:3000"
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl], BeforeValidator(parse_cors)] = []
 
     @computed_field
     @property
     def all_cors_origins(self) -> list[str]:
-        return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
-            self.FRONTEND_HOST.rstrip("/")
-        ]
+        return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS]
+
+    # Database
+    postgres_host: str = "db"
+    postgres_port: int = 5432
+    postgres_user: str = "comuser"
+    postgres_password: str = "compassword"
+    postgres_db: str = "comdb"
+
+    first_superuser: str
+    first_superuser_password: str
+
+    @property
+    def sqlalchemy_database_uri(self) -> str:
+        return (
+            f"postgresql://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+    # Redis
+    redis_url: str = "redis://redis:6379"
+
+    # Gemini
+    gemini_api_key: str = ""
+
+    # Zalo
+    zalo_app_id: str = ""
+    zalo_app_secret: str = ""
+    zalo_oa_token: str = ""
+
+    # Sentry
+    sentry_dns: HttpUrl | None = None
 
 
 settings = Settings()  # type: ignore
