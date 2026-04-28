@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+app.egg-info/
+*.egg-info/
+.mypy_cache/
+htmlcov/
+dist/
+build/
+*.egg
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# VCS
+.git/
+.gitignore
+
+# Build artifacts
+.coverage
+
+# Virtual env
+venv/
+.venv/
+.env
+.env.*
+
+# Secrets and keys
+*.key
+*.pem
+*.crt
+secrets/
+
+# Logs and temp
+*.log
+*.tmp

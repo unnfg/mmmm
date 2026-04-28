@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.main import api_router
 from app.core.config import settings
 
-if settings.SENTRY_DSN and settings.ENVIRONMENT == "prod":
+if settings.sentry_dsn and settings.environment == "prod":
     sentry_sdk.init(
-        dsn=str(settings.SENTRY_DSN),
+        dsn=str(settings.sentry_dsn),
         # Add data like request headers and IP for users,
         # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
         send_default_pii=False,
@@ -24,8 +24,8 @@ if settings.SENTRY_DSN and settings.ENVIRONMENT == "prod":
         profile_lifecycle="trace",
     )
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_PREFIX}/openapi.json",
+    title=settings.project_name,
+    openapi_url=f"{settings.api_prefix}/openapi.json",
     generate_unique_id_function=lambda route: (
         f"{route.tags[0] if route.tags else 'default'}-{route.name}"
     ),
@@ -40,4 +40,4 @@ if settings.all_cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-app.include_router(api_router, prefix=settings.API_PREFIX)
+app.include_router(api_router, prefix=settings.api_prefix)
