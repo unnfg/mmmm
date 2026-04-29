@@ -191,7 +191,6 @@ class Order(SQLModel, table=True):
     delivery_address: str | None = Field(default=None, sa_type=Text)
     payment_status: PaymentStatus = Field(
         default=PaymentStatus.UNPAID,
-        max_length=10,
         nullable=False,
     )
     raw_message: str = Field(sa_type=Text, nullable=False)

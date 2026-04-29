@@ -16,7 +16,7 @@ services:
     volumes:
       - ./app:/app/app              # hot-reload
     environment:
-      - SECRET_KEY=dev-secret-key
+      - SECRET_KEY=${SECRET_KEY?Variable not set}
     command: [
       "uv", "run", "granian",
       "--interface", "asgi",
