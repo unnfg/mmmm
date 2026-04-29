@@ -1,13 +1,16 @@
 #! /usr/bin/env bash
 
-set -e
+set -euo pipefail
 set -x
 
+PYTHON_BIN="/app/.venv/bin/python"
+ALEMBIC_BIN="/app/.venv/bin/alembic"
+
 # Let the DB start
-python app/pre_start.py
+"${PYTHON_BIN}" -m app.pre_start
 
 # Run migrations
-alembic upgrade head
+"${ALEMBIC_BIN}" upgrade head
 
 # Create initial data in DB
-python app/initial_data.py
+"${PYTHON_BIN}" -m app.initial_data
