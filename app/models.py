@@ -254,25 +254,21 @@ class OrderItem(SQLModel, table=True):
 # DB-level trigger logic for orders.updated_at.
 # Keep DDL here so migration can reuse exact SQL.
 ORDERS_SET_UPDATED_AT_FN = """
-                           CREATE
-                           OR REPLACE FUNCTION set_orders_updated_at()
+CREATE OR REPLACE FUNCTION set_orders_updated_at()
 RETURNS TRIGGER AS $$
-                           BEGIN
-    NEW.updated_at
-                           = now();
-                           RETURN NEW;
-                           END;
-$$
-                           LANGUAGE plpgsql; \
-                           """
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+"""
 
 ORDERS_SET_UPDATED_AT_TRIGGER = """
-                                CREATE TRIGGER trg_orders_set_updated_at
-                                    BEFORE UPDATE
-                                    ON orders
-                                    FOR EACH ROW
-                                    EXECUTE FUNCTION set_orders_updated_at(); \
-                                """
+CREATE TRIGGER trg_orders_set_updated_at
+BEFORE UPDATE ON orders
+FOR EACH ROW
+EXECUTE FUNCTION set_orders_updated_at();
+"""
 
 ORDERS_DROP_UPDATED_AT_TRIGGER = """
 DROP TRIGGER IF EXISTS trg_orders_set_updated_at ON orders;
