@@ -5,6 +5,8 @@ from sqlalchemy import engine_from_config, pool
 # Additional
 from sqlmodel import SQLModel
 
+import app.models  # noqa: F401
+
 # from myapp import mymodel
 from alembic import context
 from app.core.config import settings

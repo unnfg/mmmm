@@ -1,0 +1,27 @@
+# Auto-merged `docker compose up` at local
+# KHÔNG deploy file này lên production
+
+services:
+  db:
+    ports:
+      - "5432:5432"     # expose to use TablePlus, DBeaver...
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      dockerfile: Dockerfile.dev    # dev image
+    volumes:
+      - ./app:/app/app              # hot-reload
+    environment:
+      - SECRET_KEY=${SECRET_KEY?Variable not set}
+    command: [
+      "uv", "run", "granian",
+      "--interface", "asgi",
+      "app.main:app",
+      "--host", "0.0.0.0",
+      "--port", "8000",
+      "--reload"
+    ]

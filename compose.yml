@@ -2,8 +2,6 @@ services:
   db:
     image: postgres:18-alpine
     restart: always
-    ports:
-      - "5432:5432"
     volumes:
       - app-db-data:/var/lib/postgresql/data/pgdata
     env_file:
@@ -51,13 +49,14 @@ services:
       db:
         condition: service_healthy
         restart: true
+      redis:
+        condition: service_healthy
     env_file:
       - .env
     environment:
       - POSTGRES_HOST=db
-    # command: ["python", "-c", "print('TODO: alembic upgrade head')"]
-    # After setup alembic, replace to:
-    command: ["uv", "run", "alembic", "upgrade", "head"]
+      - SECRET_KEY=${SECRET_KEY?Variable not set}
+    command: ["bash", "scripts/prestart.sh"]
 
   api:
     build:
@@ -66,13 +65,12 @@ services:
     restart: always
     ports:
       - "8000:8000"
-    volumes:
-      - ./app:/app/app                 # Mount code → hot-reload
     env_file:
       - .env
     environment:
       - POSTGRES_HOST=db
       - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY?Variable not set}
     depends_on:
       db:
         condition: service_healthy
@@ -81,14 +79,12 @@ services:
         condition: service_healthy
       prestart:
         condition: service_completed_successfully
-    # run in local dev
     command: [
       "uv", "run", "granian",
       "--interface", "asgi",
       "app.main:app",
       "--host", "0.0.0.0",
-      "--port", "8000",
-      "--reload"
+      "--port", "8000"
     ]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/utils/health-check')"]
