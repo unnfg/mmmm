@@ -11,7 +11,7 @@ Table hierarchy:
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from enum import StrEnum
 
 from sqlalchemy import (
@@ -31,19 +31,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlmodel import Field, Relationship, SQLModel
-
-# ─────────────────────────────────────────────────────────────────────────────
-# UTILITIES
-# ─────────────────────────────────────────────────────────────────────────────
-
-
-def utcnow() -> datetime:
-    """Return the current UTC time as a timezone-aware datetime.
-
-    Always use this instead of datetime.utcnow() (which is naive and deprecated).
-    """
-    return datetime.now(UTC)
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ENUMS
@@ -135,11 +122,21 @@ class UpdatePassword(SQLModel):
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     __tablename__ = "users"
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    # ID and create_at are generated only in Python.
+    # If inserting directly using SQL (not through the application) → no value incorrect design
+    id: uuid.UUID = Field(
+        sa_column=Column(
+            PGUUID(as_uuid=True),
+            primary_key=True,
+            nullable=False,
+            server_default=text("gen_random_uuid()"),
+        )
+    )
     hashed_password: str
-    created_at: datetime | None = Field(
-        default_factory=utcnow,
-        sa_type=DateTime(timezone=True),  # type: ignore
+    created_at: datetime = Field(
+        sa_type=Column(
+            DateTime(timezone=True), nullable=False, server_default=text("now()")
+        )  # type: ignore
     )
 
 
@@ -240,6 +237,14 @@ class InboundMessage(SQLModel, table=True):
             "processed_at",
             postgresql_where=text("processed_at IS NULL"),
         ),
+        CheckConstraint(
+            "llm_confidence IS NULL OR (llm_confidence >= 0 AND llm_confidence <= 1)",
+            name="ck_inbound_messages_llm_confidence_range",
+        ),
+        CheckConstraint(
+            "llm_latency_ms IS NULL OR llm_latency_ms >= 0",
+            name="ck_inbound_messages_llm_latency_non_negative",
+        ),
     )
 
     id: uuid.UUID = Field(
@@ -271,11 +276,11 @@ class InboundMessage(SQLModel, table=True):
     # ── LLM classification ───────────────────────────────────────────────────
     # All fields below are NULL until the worker processes this message.
 
-    # null  → message is still in the queue, not yet classified
-    # value → classification is done; see processed_at for when
+    # null: message is still in the queue, not yet classified
+    # value: classification is done; see processed_at for when
     intent: MessageIntent | None = Field(default=None, max_length=20)
 
-    # 0.0 – 1.0. Values below 0.8 trigger needs_review = true on the Order.
+    # 0.0 - 1.0. Values below 0.8 trigger needs_review = true on the Order.
     llm_confidence: float | None = Field(default=None)
 
     # Full JSON blob returned by the LLM. Kept for debugging when AI is wrong.
@@ -374,6 +379,12 @@ class DailyMenu(SQLModel, table=True):
             name="uq_daily_menu_date_item",
         ),
         Index("ix_daily_menu_date", "menu_date"),
+        CheckConstraint(
+            "quantity_limit >= 0", name="ck_daily_menu_quantity_limit_non_negative"
+        ),
+        CheckConstraint(
+            "quantity_sold >= 0", name="ck_daily_menu_quantity_sold_non_negative"
+        ),
     )
 
     id: uuid.UUID = Field(
@@ -581,20 +592,24 @@ class OrderItem(SQLModel, table=True):
 # ─────────────────────────────────────────────────────────────────────────────
 
 ORDERS_SET_UPDATED_AT_FN = """
-CREATE OR REPLACE FUNCTION set_orders_updated_at()
+                           CREATE
+                           OR REPLACE FUNCTION set_orders_updated_at()
 RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-"""
+                           BEGIN
+    NEW.updated_at
+                           = now();
+                           RETURN NEW;
+                           END;
+$$
+                           LANGUAGE plpgsql; \
+                           """
 
 ORDERS_SET_UPDATED_AT_TRIGGER = """
-CREATE TRIGGER trg_orders_set_updated_at
-BEFORE UPDATE ON orders
-FOR EACH ROW EXECUTE FUNCTION set_orders_updated_at();
-"""
+                                CREATE TRIGGER trg_orders_set_updated_at
+                                    BEFORE UPDATE
+                                    ON orders
+                                    FOR EACH ROW EXECUTE FUNCTION set_orders_updated_at(); \
+                                """
 
 ORDERS_DROP_UPDATED_AT_TRIGGER = """
 DROP TRIGGER IF EXISTS trg_orders_set_updated_at ON orders;
