@@ -134,9 +134,9 @@ class User(UserBase, table=True):
     )
     hashed_password: str
     created_at: datetime = Field(
-        sa_type=Column(
+        sa_column=Column(
             DateTime(timezone=True), nullable=False, server_default=text("now()")
-        )  # type: ignore
+        )
     )
 
 
@@ -590,26 +590,24 @@ class OrderItem(SQLModel, table=True):
 #   1. The migration can import and reuse the exact same string.
 #   2. It is obvious what DDL is associated with this model when reading models.py.
 # ─────────────────────────────────────────────────────────────────────────────
-
 ORDERS_SET_UPDATED_AT_FN = """
-                           CREATE
-                           OR REPLACE FUNCTION set_orders_updated_at()
+CREATE OR REPLACE FUNCTION set_orders_updated_at()
 RETURNS TRIGGER AS $$
-                           BEGIN
-    NEW.updated_at
-                           = now();
-                           RETURN NEW;
-                           END;
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
 $$
-                           LANGUAGE plpgsql; \
-                           """
+LANGUAGE plpgsql;
+"""
 
 ORDERS_SET_UPDATED_AT_TRIGGER = """
-                                CREATE TRIGGER trg_orders_set_updated_at
-                                    BEFORE UPDATE
-                                    ON orders
-                                    FOR EACH ROW EXECUTE FUNCTION set_orders_updated_at(); \
-                                """
+CREATE TRIGGER trg_orders_set_updated_at
+BEFORE UPDATE
+ON orders
+FOR EACH ROW
+EXECUTE FUNCTION set_orders_updated_at();
+"""
 
 ORDERS_DROP_UPDATED_AT_TRIGGER = """
 DROP TRIGGER IF EXISTS trg_orders_set_updated_at ON orders;
